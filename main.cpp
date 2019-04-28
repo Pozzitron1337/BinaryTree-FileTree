@@ -14,9 +14,12 @@ int main() {
     bt.add(14);
     bt.printTree();
     cout<<endl;
+    cout<<bt.successor(bt.findElement(7))<<endl;
     cout<<"Max element: "<<bt.getMaxElement()<<endl;
     cout<<"Found element: "<<bt.findElement(7)<<endl;
-    bt.deleteElement(7);
+    cout<<bt.predsucsessor(14);
+    bt.deleteElement(14);
+
     bt.printTree();
 
     BinaryTree<string> bt2;

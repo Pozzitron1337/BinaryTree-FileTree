@@ -8,6 +8,7 @@ struct BinaryTreeStructure{
     Y data;
     BinaryTreeStructure* left;
     BinaryTreeStructure* right;
+    BinaryTreeStructure* parent;
 };
 
 template<class T>
@@ -28,40 +29,28 @@ public:
 
     /*Adding elements to tree*/
     bool add(const T element){
-        if(!tree){
-            tree=(BinaryTreeStructure<T>*)calloc(sizeof(T),sizeof(BinaryTreeStructure<T>*));
-            tree->data = element;
-            tree->left=NULL;
-            tree->right=NULL;
-            return true;
+        BinaryTreeStructure<T>* y=NULL;
+        BinaryTreeStructure<T>* x=tree;
+        while (x!=NULL){
+            y=x;
+            if(element<x->data)
+                x=x->left;
+            else
+                x=x->right;
         }
-        BinaryTreeStructure<T>* temp;
-        BinaryTreeStructure<T>* it=tree;
-        while(it!=NULL){
-            if(element==it->data)
-                return false;
-            if(element<it->data){
-                temp=it;
-                it=it->left;
-            }
-            else{
-                temp=it;
-                it=it->right;
-            }
+        BinaryTreeStructure<T>* temp=(BinaryTreeStructure<T>*)calloc(sizeof(T),sizeof(BinaryTreeStructure<T>));
+        temp->left=NULL;
+        temp->right=NULL;
+        temp->parent=y;
+        temp->data=element;
+        if(y==NULL) {
+            tree=temp;
         }
-        if(element < temp->data){
-            it=(BinaryTreeStructure<T>*)calloc(sizeof(T),sizeof(BinaryTreeStructure<T>));
-            it->data = element;
-            it->left=NULL;
-            it->right=NULL;
-            temp->left=it;
-        }
-        else {
-            it=(BinaryTreeStructure<T>*)calloc(sizeof(T),sizeof(BinaryTreeStructure<T>));
-            it->data = element;
-            it->left=NULL;
-            it->right=NULL;
-            temp->right=it;
+        else{
+            if(element<y->data)
+                y->left=temp;
+            else
+                y->right=temp;
         }
         return true;
     }
@@ -84,47 +73,84 @@ public:
         }
     }
 
-    /*delete element flom tree*/
-    void deleteElement(T element){
-        if(!tree)
-            return;
-        BinaryTreeStructure<T>* it=tree;     //iterator
-        BinaryTreeStructure<T>* prev_it=NULL;//previous value of iterator
-        BinaryTreeStructure<T>* lefttree;    //the left-hand tree from deleting element
-        BinaryTreeStructure<T>* righttree;   //the right-hand tree from deleting element
-        while(it!=NULL){
-            if(element==it->data) {
-                lefttree=it->left;
-                righttree=it->right;
-                break;
-            }
-            if(element < it->data){
-                prev_it=it;
-                it=it->left;
-            }
-            else{
-                prev_it=it;
-                it=it->right;
-            }
-        }
-        if(it==NULL)
-            return;
-        if(prev_it->data > it->data)   //if left-hand
-        {
-            delete it;                 //delete element
-            prev_it->left=righttree;   //saving the order
-            while(prev_it->left!=NULL) //moving to smallest element
-                prev_it=prev_it->left;
-            prev_it->left=lefttree;    //save the order of tree
-        }
+    /*deleting element by input*/
+    bool deleteElement(T element){
+        BinaryTreeStructure<T>* z=findElement(element);
+        if(z==NULL)
+            return false;
+        BinaryTreeStructure<T>* y;
+        if(z->left==NULL || z->right==NULL)
+            y=z;
         else
-        {
-            delete it;
-            prev_it->right=lefttree;
-            while(prev_it->right!=NULL)
-                prev_it=prev_it->right;
-            prev_it->right=righttree;
+            y=successor(z);
+        BinaryTreeStructure<T>* x;
+        if(y->left!=NULL)
+            x=y->left;
+        else
+            x=y->right;
+        if(x!=NULL)
+            x->parent=y->parent;
+        if(y->parent==NULL)
+            tree=x;
+        else{
+            if(y == y->parent->left)
+                y->parent->left=x;
+            else
+                y->parent->right=x;
         }
+        if(y!=z)
+            z->data=y->data;
+        free(y);
+        return true;
+    }
+
+    /*get the next key by values*/
+    T successor(T element){
+        BinaryTreeStructure<T>* x = findElement(element);
+        if(x->right!=NULL)
+            return treeMinimum(x->right)->data;
+        BinaryTreeStructure<T>* y = x->parent;
+        while(y!=NULL && x==y->right){
+            x=y;
+            y=y->parent;
+        }
+        return y->data;
+    }
+
+    /*get the previous key by values*/
+    T predsucsessor(T element){
+        BinaryTreeStructure<T>* x = findElement(element);
+        if(x->left!=NULL)
+            return treeMinimum(x->left)->data;
+        BinaryTreeStructure<T>* y = x->parent;
+        while(y!=NULL && x==y->left){
+            x=y;
+            y=y->parent;
+        }
+        return y->data;
+    }
+    /*get adress for succsessor element*/
+    BinaryTreeStructure<T>* successor(BinaryTreeStructure<T>* x){
+        if(x->right!=NULL)
+            return treeMinimum(x->right);
+        BinaryTreeStructure<T>* y = x->parent;
+        while(y!=NULL && x==y->right){
+            x=y;
+            y=y->parent;
+        }
+        return y;
+    }
+
+    /*get adress for predsuccsessor element*/
+    BinaryTreeStructure<T>* predsucsessor(BinaryTreeStructure<T>* x){
+        if(x->left!=NULL)
+            return treeMinimum(x->left);
+        BinaryTreeStructure<T>* y = x->parent;
+        while(y!=NULL && x==y->left){
+            x=y;
+            y=y->parent;
+        }
+        return y;
     }
 
     /*finding element in tree and returns the reference to element*/
@@ -154,6 +180,43 @@ public:
         while(temp->right!=NULL)
             temp=temp->right;
         return temp->data;
+    }
+
+    /*gets min element from tree*/
+    T getMinElement(){
+        if(tree==NULL)
+            return (T)NULL;
+        BinaryTreeStructure<T>* temp;
+        temp=tree;
+        while(temp->left!=NULL)
+            temp=temp->left;
+        return temp->data;
+    }
+
+    /*gets adress of min element from tree  or subtree root*/
+    BinaryTreeStructure<T>* treeMinimum(BinaryTreeStructure<T>* element){
+        if(element==NULL)
+            return NULL;
+        BinaryTreeStructure<T>* it=element;
+        BinaryTreeStructure<T>* result;
+        while(it!=NULL){
+            result=it;
+            it=it->left;
+        }
+        return result;
+    }
+
+    /*gets adress of max element from tree  or subtree root*/
+    BinaryTreeStructure<T>* treeMaximum(BinaryTreeStructure<T>* element){
+        if(element==NULL)
+            return NULL;
+        BinaryTreeStructure<T>* it=element;
+        BinaryTreeStructure<T>* result;
+        while(it!=NULL){
+            result=it;
+            it=it->right;
+        }
+        return result;
     }
 
     /*makes list empty*/
